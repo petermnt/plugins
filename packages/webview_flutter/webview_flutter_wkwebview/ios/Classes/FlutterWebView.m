@@ -131,6 +131,8 @@
         _webView.scrollView.automaticallyAdjustsScrollIndicatorInsets = NO;
       }
     }
+      
+    [_webView setAllowsLinkPreview: false];
 
     [self applySettings:settings];
     // TODO(amirh): return an error if apply settings failed once it's possible to do so.
