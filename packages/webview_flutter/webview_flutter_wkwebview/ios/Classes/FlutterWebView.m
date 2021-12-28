@@ -132,6 +132,8 @@
       }
     }
 
+    [self overrides];
+      
     [self applySettings:settings];
     // TODO(amirh): return an error if apply settings failed once it's possible to do so.
     // https://github.com/flutter/flutter/issues/36228
@@ -146,6 +148,18 @@
     }
   }
   return self;
+}
+
+- (void)overrides {
+    // allow link previews
+    [_webView setAllowsLinkPreview: false];
+    
+    // prefered content mode
+    if (@available(iOS 13.0, *)) {
+        WKWebpagePreferences* preferences = [[_webView configuration] defaultWebpagePreferences];
+        [preferences setPreferredContentMode:WKContentModeMobile];
+        [[_webView configuration] setDefaultWebpagePreferences:preferences];
+    }
 }
 
 - (void)dealloc {
