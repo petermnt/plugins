@@ -3,12 +3,13 @@
 // found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
-import 'package:in_app_purchase_storekit_example/example_payment_queue_delegate.dart';
 import 'package:in_app_purchase_platform_interface/in_app_purchase_platform_interface.dart';
+import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
+
 import 'consumable_store.dart';
+import 'example_payment_queue_delegate.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,8 +20,6 @@ void main() {
 
   runApp(_MyApp());
 }
-
-const bool _kAutoConsume = true;
 
 const String _kConsumableId = 'consumable';
 const String _kUpgradeId = 'upgrade';
@@ -35,20 +34,20 @@ const List<String> _kProductIds = <String>[
 
 class _MyApp extends StatefulWidget {
   @override
-  _MyAppState createState() => _MyAppState();
+  State<_MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<_MyApp> {
   final InAppPurchaseStoreKitPlatform _iapStoreKitPlatform =
       InAppPurchasePlatform.instance as InAppPurchaseStoreKitPlatform;
   final InAppPurchaseStoreKitPlatformAddition _iapStoreKitPlatformAddition =
-      InAppPurchasePlatformAddition.instance
+      InAppPurchasePlatformAddition.instance!
           as InAppPurchaseStoreKitPlatformAddition;
   late StreamSubscription<List<PurchaseDetails>> _subscription;
-  List<String> _notFoundIds = [];
-  List<ProductDetails> _products = [];
-  List<PurchaseDetails> _purchases = [];
-  List<String> _consumables = [];
+  List<String> _notFoundIds = <String>[];
+  List<ProductDetails> _products = <ProductDetails>[];
+  List<PurchaseDetails> _purchases = <PurchaseDetails>[];
+  List<String> _consumables = <String>[];
   bool _isAvailable = false;
   bool _purchasePending = false;
   bool _loading = true;
@@ -58,11 +57,12 @@ class _MyAppState extends State<_MyApp> {
   void initState() {
     final Stream<List<PurchaseDetails>> purchaseUpdated =
         _iapStoreKitPlatform.purchaseStream;
-    _subscription = purchaseUpdated.listen((purchaseDetailsList) {
+    _subscription =
+        purchaseUpdated.listen((List<PurchaseDetails> purchaseDetailsList) {
       _listenToPurchaseUpdated(purchaseDetailsList);
     }, onDone: () {
       _subscription.cancel();
-    }, onError: (error) {
+    }, onError: (Object error) {
       // handle error here.
     });
 
@@ -78,26 +78,26 @@ class _MyAppState extends State<_MyApp> {
     if (!isAvailable) {
       setState(() {
         _isAvailable = isAvailable;
-        _products = [];
-        _purchases = [];
-        _notFoundIds = [];
-        _consumables = [];
+        _products = <ProductDetails>[];
+        _purchases = <PurchaseDetails>[];
+        _notFoundIds = <String>[];
+        _consumables = <String>[];
         _purchasePending = false;
         _loading = false;
       });
       return;
     }
 
-    ProductDetailsResponse productDetailResponse =
+    final ProductDetailsResponse productDetailResponse =
         await _iapStoreKitPlatform.queryProductDetails(_kProductIds.toSet());
     if (productDetailResponse.error != null) {
       setState(() {
         _queryProductError = productDetailResponse.error!.message;
         _isAvailable = isAvailable;
         _products = productDetailResponse.productDetails;
-        _purchases = [];
+        _purchases = <PurchaseDetails>[];
         _notFoundIds = productDetailResponse.notFoundIDs;
-        _consumables = [];
+        _consumables = <String>[];
         _purchasePending = false;
         _loading = false;
       });
@@ -109,16 +109,16 @@ class _MyAppState extends State<_MyApp> {
         _queryProductError = null;
         _isAvailable = isAvailable;
         _products = productDetailResponse.productDetails;
-        _purchases = [];
+        _purchases = <PurchaseDetails>[];
         _notFoundIds = productDetailResponse.notFoundIDs;
-        _consumables = [];
+        _consumables = <String>[];
         _purchasePending = false;
         _loading = false;
       });
       return;
     }
 
-    List<String> consumables = await ConsumableStore.load();
+    final List<String> consumables = await ConsumableStore.load();
     setState(() {
       _isAvailable = isAvailable;
       _products = productDetailResponse.productDetails;
@@ -137,11 +137,11 @@ class _MyAppState extends State<_MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> stack = [];
+    final List<Widget> stack = <Widget>[];
     if (_queryProductError == null) {
       stack.add(
         ListView(
-          children: [
+          children: <Widget>[
             _buildConnectionCheckTile(),
             _buildProductList(),
             _buildConsumableBox(),
@@ -157,10 +157,10 @@ class _MyAppState extends State<_MyApp> {
     if (_purchasePending) {
       stack.add(
         Stack(
-          children: [
+          children: const <Widget>[
             Opacity(
               opacity: 0.3,
-              child: const ModalBarrier(dismissible: false, color: Colors.grey),
+              child: ModalBarrier(dismissible: false, color: Colors.grey),
             ),
             Center(
               child: CircularProgressIndicator(),
@@ -184,22 +184,24 @@ class _MyAppState extends State<_MyApp> {
 
   Card _buildConnectionCheckTile() {
     if (_loading) {
-      return Card(child: ListTile(title: const Text('Trying to connect...')));
+      return const Card(child: ListTile(title: Text('Trying to connect...')));
     }
     final Widget storeHeader = ListTile(
       leading: Icon(_isAvailable ? Icons.check : Icons.block,
-          color: _isAvailable ? Colors.green : ThemeData.light().errorColor),
-      title: Text(
-          'The store is ' + (_isAvailable ? 'available' : 'unavailable') + '.'),
+          color: _isAvailable
+              ? Colors.green
+              : ThemeData.light().colorScheme.error),
+      title:
+          Text('The store is ${_isAvailable ? 'available' : 'unavailable'}.'),
     );
     final List<Widget> children = <Widget>[storeHeader];
 
     if (!_isAvailable) {
-      children.addAll([
-        Divider(),
+      children.addAll(<Widget>[
+        const Divider(),
         ListTile(
           title: Text('Not connected',
-              style: TextStyle(color: ThemeData.light().errorColor)),
+              style: TextStyle(color: ThemeData.light().colorScheme.error)),
           subtitle: const Text(
               'Unable to connect to the payments processor. Has this app been configured correctly? See the example README for instructions.'),
         ),
@@ -210,29 +212,30 @@ class _MyAppState extends State<_MyApp> {
 
   Card _buildProductList() {
     if (_loading) {
-      return Card(
-          child: (ListTile(
+      return const Card(
+          child: ListTile(
               leading: CircularProgressIndicator(),
-              title: Text('Fetching products...'))));
+              title: Text('Fetching products...')));
     }
     if (!_isAvailable) {
-      return Card();
+      return const Card();
     }
-    final ListTile productHeader = ListTile(title: Text('Products for Sale'));
-    List<ListTile> productList = <ListTile>[];
+    const ListTile productHeader = ListTile(title: Text('Products for Sale'));
+    final List<ListTile> productList = <ListTile>[];
     if (_notFoundIds.isNotEmpty) {
       productList.add(ListTile(
           title: Text('[${_notFoundIds.join(", ")}] not found',
-              style: TextStyle(color: ThemeData.light().errorColor)),
-          subtitle: Text(
+              style: TextStyle(color: ThemeData.light().colorScheme.error)),
+          subtitle: const Text(
               'This app needs special configuration to run. Please see example/README.md for instructions.')));
     }
 
     // This loading previous purchases code is just a demo. Please do not use this as it is.
     // In your app you should always verify the purchase data using the `verificationData` inside the [PurchaseDetails] object before trusting it.
     // We recommend that you use your own server to verify the purchase data.
-    Map<String, PurchaseDetails> purchases =
-        Map.fromEntries(_purchases.map((PurchaseDetails purchase) {
+    final Map<String, PurchaseDetails> purchases =
+        Map<String, PurchaseDetails>.fromEntries(
+            _purchases.map((PurchaseDetails purchase) {
       if (purchase.pendingCompletePurchase) {
         _iapStoreKitPlatform.completePurchase(purchase);
       }
@@ -240,7 +243,7 @@ class _MyAppState extends State<_MyApp> {
     }));
     productList.addAll(_products.map(
       (ProductDetails productDetails) {
-        PurchaseDetails? previousPurchase = purchases[productDetails.id];
+        final PurchaseDetails? previousPurchase = purchases[productDetails.id];
         return ListTile(
             title: Text(
               productDetails.title,
@@ -253,52 +256,52 @@ class _MyAppState extends State<_MyApp> {
                     onPressed: () {
                       _iapStoreKitPlatformAddition.showPriceConsentIfNeeded();
                     },
-                    icon: Icon(Icons.upgrade))
+                    icon: const Icon(Icons.upgrade))
                 : TextButton(
-                    child: Text(productDetails.price),
                     style: TextButton.styleFrom(
                       backgroundColor: Colors.green[800],
+                      // TODO(darrenaustin): Migrate to new API once it lands in stable: https://github.com/flutter/flutter/issues/105724
+                      // ignore: deprecated_member_use
                       primary: Colors.white,
                     ),
                     onPressed: () {
-                      PurchaseParam purchaseParam = PurchaseParam(
+                      final PurchaseParam purchaseParam = PurchaseParam(
                         productDetails: productDetails,
-                        applicationUserName: null,
                       );
                       if (productDetails.id == _kConsumableId) {
                         _iapStoreKitPlatform.buyConsumable(
-                            purchaseParam: purchaseParam,
-                            autoConsume: _kAutoConsume || Platform.isIOS);
+                            purchaseParam: purchaseParam);
                       } else {
                         _iapStoreKitPlatform.buyNonConsumable(
                             purchaseParam: purchaseParam);
                       }
                     },
+                    child: Text(productDetails.price),
                   ));
       },
     ));
 
     return Card(
-        child:
-            Column(children: <Widget>[productHeader, Divider()] + productList));
+        child: Column(
+            children: <Widget>[productHeader, const Divider()] + productList));
   }
 
   Card _buildConsumableBox() {
     if (_loading) {
-      return Card(
-          child: (ListTile(
+      return const Card(
+          child: ListTile(
               leading: CircularProgressIndicator(),
-              title: Text('Fetching consumables...'))));
+              title: Text('Fetching consumables...')));
     }
     if (!_isAvailable || _notFoundIds.contains(_kConsumableId)) {
-      return Card();
+      return const Card();
     }
-    final ListTile consumableHeader =
+    const ListTile consumableHeader =
         ListTile(title: Text('Purchased consumables'));
     final List<Widget> tokens = _consumables.map((String id) {
       return GridTile(
         child: IconButton(
-          icon: Icon(
+          icon: const Icon(
             Icons.stars,
             size: 42.0,
             color: Colors.orange,
@@ -311,12 +314,12 @@ class _MyAppState extends State<_MyApp> {
     return Card(
         child: Column(children: <Widget>[
       consumableHeader,
-      Divider(),
+      const Divider(),
       GridView.count(
         crossAxisCount: 5,
-        children: tokens,
         shrinkWrap: true,
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
+        children: tokens,
       )
     ]));
   }
@@ -329,16 +332,17 @@ class _MyAppState extends State<_MyApp> {
     return Padding(
       padding: const EdgeInsets.all(4.0),
       child: Row(
-        mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.end,
-        children: [
+        children: <Widget>[
           TextButton(
-            child: Text('Restore purchases'),
             style: TextButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              // TODO(darrenaustin): Migrate to new API once it lands in stable: https://github.com/flutter/flutter/issues/105724
+              // ignore: deprecated_member_use
               primary: Colors.white,
             ),
             onPressed: () => _iapStoreKitPlatform.restorePurchases(),
+            child: const Text('Restore purchases'),
           ),
         ],
       ),
@@ -359,11 +363,11 @@ class _MyAppState extends State<_MyApp> {
     });
   }
 
-  void deliverProduct(PurchaseDetails purchaseDetails) async {
+  Future<void> deliverProduct(PurchaseDetails purchaseDetails) async {
     // IMPORTANT!! Always verify purchase details before delivering the product.
     if (purchaseDetails.productID == _kConsumableId) {
       await ConsumableStore.save(purchaseDetails.purchaseID!);
-      List<String> consumables = await ConsumableStore.load();
+      final List<String> consumables = await ConsumableStore.load();
       setState(() {
         _purchasePending = false;
         _consumables = consumables;
@@ -393,27 +397,30 @@ class _MyAppState extends State<_MyApp> {
   }
 
   void _listenToPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) {
-    purchaseDetailsList.forEach((PurchaseDetails purchaseDetails) async {
-      if (purchaseDetails.status == PurchaseStatus.pending) {
-        showPendingUI();
-      } else {
-        if (purchaseDetails.status == PurchaseStatus.error) {
-          handleError(purchaseDetails.error!);
-        } else if (purchaseDetails.status == PurchaseStatus.purchased ||
-            purchaseDetails.status == PurchaseStatus.restored) {
-          bool valid = await _verifyPurchase(purchaseDetails);
-          if (valid) {
-            deliverProduct(purchaseDetails);
-          } else {
-            _handleInvalidPurchase(purchaseDetails);
-            return;
-          }
-        }
+    purchaseDetailsList.forEach(_handleReportedPurchaseState);
+  }
 
-        if (purchaseDetails.pendingCompletePurchase) {
-          await _iapStoreKitPlatform.completePurchase(purchaseDetails);
+  Future<void> _handleReportedPurchaseState(
+      PurchaseDetails purchaseDetails) async {
+    if (purchaseDetails.status == PurchaseStatus.pending) {
+      showPendingUI();
+    } else {
+      if (purchaseDetails.status == PurchaseStatus.error) {
+        handleError(purchaseDetails.error!);
+      } else if (purchaseDetails.status == PurchaseStatus.purchased ||
+          purchaseDetails.status == PurchaseStatus.restored) {
+        final bool valid = await _verifyPurchase(purchaseDetails);
+        if (valid) {
+          await deliverProduct(purchaseDetails);
+        } else {
+          _handleInvalidPurchase(purchaseDetails);
+          return;
         }
       }
-    });
+
+      if (purchaseDetails.pendingCompletePurchase) {
+        await _iapStoreKitPlatform.completePurchase(purchaseDetails);
+      }
+    }
   }
 }

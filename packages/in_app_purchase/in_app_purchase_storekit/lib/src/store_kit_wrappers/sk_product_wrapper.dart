@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:ui' show hashValues;
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'enum_converters.dart';
 
@@ -17,8 +17,12 @@ part 'sk_product_wrapper.g.dart';
 /// Represents the response object returned by [SKRequestMaker.startProductRequest].
 /// Contains information about a list of products and a list of invalid product identifiers.
 @JsonSerializable()
+@immutable
 class SkProductResponseWrapper {
   /// Creates an [SkProductResponseWrapper] with the given product details.
+  // TODO(stuartmorgan): Temporarily ignore const warning in other parts of the
+  // federated package, and remove this.
+  // ignore: prefer_const_constructors_in_immutables
   SkProductResponseWrapper(
       {required this.products, required this.invalidProductIdentifiers});
 
@@ -52,15 +56,14 @@ class SkProductResponseWrapper {
     if (other.runtimeType != runtimeType) {
       return false;
     }
-    final SkProductResponseWrapper typedOther =
-        other as SkProductResponseWrapper;
-    return DeepCollectionEquality().equals(typedOther.products, products) &&
-        DeepCollectionEquality().equals(
-            typedOther.invalidProductIdentifiers, invalidProductIdentifiers);
+    return other is SkProductResponseWrapper &&
+        const DeepCollectionEquality().equals(other.products, products) &&
+        const DeepCollectionEquality()
+            .equals(other.invalidProductIdentifiers, invalidProductIdentifiers);
   }
 
   @override
-  int get hashCode => hashValues(this.products, this.invalidProductIdentifiers);
+  int get hashCode => Object.hash(products, invalidProductIdentifiers);
 }
 
 /// Dart wrapper around StoreKit's [SKProductPeriodUnit](https://developer.apple.com/documentation/storekit/skproductperiodunit?language=objc).
@@ -93,8 +96,12 @@ enum SKSubscriptionPeriodUnit {
 /// A period is defined by a [numberOfUnits] and a [unit], e.g for a 3 months period [numberOfUnits] is 3 and [unit] is a month.
 /// It is used as a property in [SKProductDiscountWrapper] and [SKProductWrapper].
 @JsonSerializable()
+@immutable
 class SKProductSubscriptionPeriodWrapper {
   /// Creates an [SKProductSubscriptionPeriodWrapper] for a `numberOfUnits`x`unit` period.
+  // TODO(stuartmorgan): Temporarily ignore const warning in other parts of the
+  // federated package, and remove this.
+  // ignore: prefer_const_constructors_in_immutables
   SKProductSubscriptionPeriodWrapper(
       {required this.numberOfUnits, required this.unit});
 
@@ -128,13 +135,13 @@ class SKProductSubscriptionPeriodWrapper {
     if (other.runtimeType != runtimeType) {
       return false;
     }
-    final SKProductSubscriptionPeriodWrapper typedOther =
-        other as SKProductSubscriptionPeriodWrapper;
-    return typedOther.numberOfUnits == numberOfUnits && typedOther.unit == unit;
+    return other is SKProductSubscriptionPeriodWrapper &&
+        other.numberOfUnits == numberOfUnits &&
+        other.unit == unit;
   }
 
   @override
-  int get hashCode => hashValues(this.numberOfUnits, this.unit);
+  int get hashCode => Object.hash(numberOfUnits, unit);
 }
 
 /// Dart wrapper around StoreKit's [SKProductDiscountPaymentMode](https://developer.apple.com/documentation/storekit/skproductdiscountpaymentmode?language=objc).
@@ -160,18 +167,42 @@ enum SKProductDiscountPaymentMode {
   unspecified,
 }
 
+/// Dart wrapper around StoreKit's [SKProductDiscountType]
+/// (https://developer.apple.com/documentation/storekit/skproductdiscounttype?language=objc)
+///
+/// This is used as a property in the [SKProductDiscountWrapper].
+/// The values of the enum options are matching the [SKProductDiscountType]'s
+/// values.
+///
+/// Values representing the types of discount offers an app can present.
+enum SKProductDiscountType {
+  /// A constant indicating the discount type is an introductory offer.
+  @JsonValue(0)
+  introductory,
+
+  /// A constant indicating the discount type is a promotional offer.
+  @JsonValue(1)
+  subscription,
+}
+
 /// Dart wrapper around StoreKit's [SKProductDiscount](https://developer.apple.com/documentation/storekit/skproductdiscount?language=objc).
 ///
 /// It is used as a property in [SKProductWrapper].
 @JsonSerializable()
+@immutable
 class SKProductDiscountWrapper {
   /// Creates an [SKProductDiscountWrapper] with the given discount details.
+  // TODO(stuartmorgan): Temporarily ignore const warning in other parts of the
+  // federated package, and remove this.
+  // ignore: prefer_const_constructors_in_immutables
   SKProductDiscountWrapper(
       {required this.price,
       required this.priceLocale,
       required this.numberOfPeriods,
       required this.paymentMode,
-      required this.subscriptionPeriod});
+      required this.subscriptionPeriod,
+      required this.identifier,
+      required this.type});
 
   /// Constructing an instance from a map from the Objective-C layer.
   ///
@@ -203,6 +234,16 @@ class SKProductDiscountWrapper {
   /// and their units and duration do not have to be matched.
   final SKProductSubscriptionPeriodWrapper subscriptionPeriod;
 
+  /// A string used to uniquely identify a discount offer for a product.
+  ///
+  /// You set up offers and their identifiers in App Store Connect.
+  @JsonKey(defaultValue: null)
+  final String? identifier;
+
+  /// Values representing the types of discount offers an app can present.
+  @SKProductDiscountTypeConverter()
+  final SKProductDiscountType type;
+
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) {
@@ -211,18 +252,19 @@ class SKProductDiscountWrapper {
     if (other.runtimeType != runtimeType) {
       return false;
     }
-    final SKProductDiscountWrapper typedOther =
-        other as SKProductDiscountWrapper;
-    return typedOther.price == price &&
-        typedOther.priceLocale == priceLocale &&
-        typedOther.numberOfPeriods == numberOfPeriods &&
-        typedOther.paymentMode == paymentMode &&
-        typedOther.subscriptionPeriod == subscriptionPeriod;
+    return other is SKProductDiscountWrapper &&
+        other.price == price &&
+        other.priceLocale == priceLocale &&
+        other.numberOfPeriods == numberOfPeriods &&
+        other.paymentMode == paymentMode &&
+        other.subscriptionPeriod == subscriptionPeriod &&
+        other.identifier == identifier &&
+        other.type == type;
   }
 
   @override
-  int get hashCode => hashValues(this.price, this.priceLocale,
-      this.numberOfPeriods, this.paymentMode, this.subscriptionPeriod);
+  int get hashCode => Object.hash(price, priceLocale, numberOfPeriods,
+      paymentMode, subscriptionPeriod, identifier, type);
 }
 
 /// Dart wrapper around StoreKit's [SKProduct](https://developer.apple.com/documentation/storekit/skproduct?language=objc).
@@ -230,8 +272,12 @@ class SKProductDiscountWrapper {
 /// A list of [SKProductWrapper] is returned in the [SKRequestMaker.startProductRequest] method, and
 /// should be stored for use when making a payment.
 @JsonSerializable()
+@immutable
 class SKProductWrapper {
   /// Creates an [SKProductWrapper] with the given product details.
+  // TODO(stuartmorgan): Temporarily ignore const warning in other parts of the
+  // federated package, and remove this.
+  // ignore: prefer_const_constructors_in_immutables
   SKProductWrapper({
     required this.productIdentifier,
     required this.localizedTitle,
@@ -314,29 +360,29 @@ class SKProductWrapper {
     if (other.runtimeType != runtimeType) {
       return false;
     }
-    final SKProductWrapper typedOther = other as SKProductWrapper;
-    return typedOther.productIdentifier == productIdentifier &&
-        typedOther.localizedTitle == localizedTitle &&
-        typedOther.localizedDescription == localizedDescription &&
-        typedOther.priceLocale == priceLocale &&
-        typedOther.subscriptionGroupIdentifier == subscriptionGroupIdentifier &&
-        typedOther.price == price &&
-        typedOther.subscriptionPeriod == subscriptionPeriod &&
-        typedOther.introductoryPrice == introductoryPrice &&
-        DeepCollectionEquality().equals(typedOther.discounts, discounts);
+    return other is SKProductWrapper &&
+        other.productIdentifier == productIdentifier &&
+        other.localizedTitle == localizedTitle &&
+        other.localizedDescription == localizedDescription &&
+        other.priceLocale == priceLocale &&
+        other.subscriptionGroupIdentifier == subscriptionGroupIdentifier &&
+        other.price == price &&
+        other.subscriptionPeriod == subscriptionPeriod &&
+        other.introductoryPrice == introductoryPrice &&
+        const DeepCollectionEquality().equals(other.discounts, discounts);
   }
 
   @override
-  int get hashCode => hashValues(
-      this.productIdentifier,
-      this.localizedTitle,
-      this.localizedDescription,
-      this.priceLocale,
-      this.subscriptionGroupIdentifier,
-      this.price,
-      this.subscriptionPeriod,
-      this.introductoryPrice,
-      this.discounts);
+  int get hashCode => Object.hash(
+      productIdentifier,
+      localizedTitle,
+      localizedDescription,
+      priceLocale,
+      subscriptionGroupIdentifier,
+      price,
+      subscriptionPeriod,
+      introductoryPrice,
+      discounts);
 }
 
 /// Object that indicates the locale of the price
@@ -346,8 +392,12 @@ class SKProductWrapper {
 //                 Matching android to only get the currencySymbol for now.
 //                 https://github.com/flutter/flutter/issues/26610
 @JsonSerializable()
+@immutable
 class SKPriceLocaleWrapper {
   /// Creates a new price locale for `currencySymbol` and `currencyCode`.
+  // TODO(stuartmorgan): Temporarily ignore const warning in other parts of the
+  // federated package, and remove this.
+  // ignore: prefer_const_constructors_in_immutables
   SKPriceLocaleWrapper({
     required this.currencySymbol,
     required this.currencyCode,
@@ -385,11 +435,11 @@ class SKPriceLocaleWrapper {
     if (other.runtimeType != runtimeType) {
       return false;
     }
-    final SKPriceLocaleWrapper typedOther = other as SKPriceLocaleWrapper;
-    return typedOther.currencySymbol == currencySymbol &&
-        typedOther.currencyCode == currencyCode;
+    return other is SKPriceLocaleWrapper &&
+        other.currencySymbol == currencySymbol &&
+        other.currencyCode == currencyCode;
   }
 
   @override
-  int get hashCode => hashValues(this.currencySymbol, this.currencyCode);
+  int get hashCode => Object.hash(currencySymbol, currencyCode);
 }

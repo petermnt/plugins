@@ -4,8 +4,8 @@
 
 package io.flutter.plugins.urllauncher;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -27,7 +27,7 @@ import org.robolectric.RobolectricTestRunner;
 
 @RunWith(RobolectricTestRunner.class)
 public class MethodCallHandlerImplTest {
-  private static final String CHANNEL_NAME = "plugins.flutter.io/url_launcher";
+  private static final String CHANNEL_NAME = "plugins.flutter.io/url_launcher_android";
   private UrlLauncher urlLauncher;
   private MethodCallHandlerImpl methodCallHandler;
 

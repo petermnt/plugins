@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:ui' show hashValues;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart';
 
@@ -12,6 +12,7 @@ import 'src/common.dart';
 
 export 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart'
     show SignInOption;
+
 export 'src/common.dart';
 export 'widgets.dart';
 
@@ -39,6 +40,7 @@ class GoogleSignInAuthentication {
 /// [GoogleSignInUserData].
 ///
 /// [id] is guaranteed to be non-null.
+@immutable
 class GoogleSignInAccount implements GoogleIdentity {
   GoogleSignInAccount._(this._googleSignIn, GoogleSignInUserData data)
       : displayName = data.displayName,
@@ -99,9 +101,7 @@ class GoogleSignInAccount implements GoogleIdentity {
 
     // On Android, there isn't an API for refreshing the idToken, so re-use
     // the one we obtained on login.
-    if (response.idToken == null) {
-      response.idToken = _idToken;
-    }
+    response.idToken ??= _idToken;
 
     return GoogleSignInAuthentication._(response);
   }
@@ -113,10 +113,10 @@ class GoogleSignInAccount implements GoogleIdentity {
   Future<Map<String, String>> get authHeaders async {
     final String? token = (await authentication).accessToken;
     return <String, String>{
-      "Authorization": "Bearer $token",
+      'Authorization': 'Bearer $token',
       // TODO(kevmoo): Use the correct value once it's available from authentication
       // See https://github.com/flutter/flutter/issues/80905
-      "X-Goog-AuthUser": "0",
+      'X-Goog-AuthUser': '0',
     };
   }
 
@@ -130,9 +130,13 @@ class GoogleSignInAccount implements GoogleIdentity {
   }
 
   @override
-  bool operator ==(dynamic other) {
-    if (identical(this, other)) return true;
-    if (other is! GoogleSignInAccount) return false;
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    if (other is! GoogleSignInAccount) {
+      return false;
+    }
     final GoogleSignInAccount otherAccount = other;
     return displayName == otherAccount.displayName &&
         email == otherAccount.email &&
@@ -144,7 +148,7 @@ class GoogleSignInAccount implements GoogleIdentity {
 
   @override
   int get hashCode =>
-      hashValues(displayName, email, id, photoUrl, _idToken, serverAuthCode);
+      Object.hash(displayName, email, id, photoUrl, _idToken, serverAuthCode);
 
   @override
   String toString() {
@@ -175,11 +179,16 @@ class GoogleSignIn {
   /// The [hostedDomain] argument specifies a hosted domain restriction. By
   /// setting this, sign in will be restricted to accounts of the user in the
   /// specified domain. By default, the list of accounts will not be restricted.
+  ///
+  /// The [forceCodeForRefreshToken] is used on Android to ensure the authentication
+  /// code can be exchanged for a refresh token after the first request.
   GoogleSignIn({
     this.signInOption = SignInOption.standard,
     this.scopes = const <String>[],
     this.hostedDomain,
     this.clientId,
+    this.serverClientId,
+    this.forceCodeForRefreshToken = false,
   });
 
   /// Factory for creating default sign in user experience.
@@ -187,10 +196,7 @@ class GoogleSignIn {
     List<String> scopes = const <String>[],
     String? hostedDomain,
   }) {
-    return GoogleSignIn(
-        signInOption: SignInOption.standard,
-        scopes: scopes,
-        hostedDomain: hostedDomain);
+    return GoogleSignIn(scopes: scopes, hostedDomain: hostedDomain);
   }
 
   /// Factory for creating sign in suitable for games. This option is only
@@ -225,10 +231,33 @@ class GoogleSignIn {
   /// Domain to restrict sign-in to.
   final String? hostedDomain;
 
-  /// Client ID being used to connect to google sign-in. Only supported on web.
+  /// Client ID being used to connect to google sign-in.
+  ///
+  /// This option is not supported on all platforms (e.g. Android). It is
+  /// optional if file-based configuration is used.
+  ///
+  /// The value specified here has precedence over a value from a configuration
+  /// file.
   final String? clientId;
 
-  StreamController<GoogleSignInAccount?> _currentUserController =
+  /// Client ID of the backend server to which the app needs to authenticate
+  /// itself.
+  ///
+  /// Optional and not supported on all platforms (e.g. web). By default, it
+  /// is initialized from a configuration file if available.
+  ///
+  /// The value specified here has precedence over a value from a configuration
+  /// file.
+  ///
+  /// [GoogleSignInAuthentication.idToken] and
+  /// [GoogleSignInAccount.serverAuthCode] will be specific to the backend
+  /// server.
+  final String? serverClientId;
+
+  /// Force the authorization code to be valid for a refresh token every time. Only needed on Android.
+  final bool forceCodeForRefreshToken;
+
+  final StreamController<GoogleSignInAccount?> _currentUserController =
       StreamController<GoogleSignInAccount?>.broadcast();
 
   /// Subscribe to this stream to be notified when the current user changes.
@@ -257,15 +286,19 @@ class GoogleSignIn {
   }
 
   Future<void> _ensureInitialized() {
-    return _initialization ??= GoogleSignInPlatform.instance.init(
+    return _initialization ??=
+        GoogleSignInPlatform.instance.initWithParams(SignInInitParameters(
       signInOption: signInOption,
       scopes: scopes,
       hostedDomain: hostedDomain,
       clientId: clientId,
-    )..catchError((dynamic _) {
-        // Invalidate initialization if it errors out.
-        _initialization = null;
-      });
+      serverClientId: serverClientId,
+      forceCodeForRefreshToken: forceCodeForRefreshToken,
+    ))
+          ..catchError((dynamic _) {
+            // Invalidate initialization if it errors out.
+            _initialization = null;
+          });
   }
 
   /// The most recently scheduled method call.
@@ -277,7 +310,7 @@ class GoogleSignIn {
     final Completer<void> completer = Completer<void>();
     future.whenComplete(completer.complete).catchError((dynamic _) {
       // Ignore if previous call completed with an error.
-      // TODO: Should we log errors here, if debug or similar?
+      // TODO(ditman): Should we log errors here, if debug or similar?
     });
     return completer.future;
   }

@@ -4,7 +4,7 @@ publish_to: none
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
-  flutter: ">=2.5.0"
+  flutter: ">=2.10.0"
 
 dependencies:
   flutter:
@@ -19,11 +19,12 @@ dependencies:
   http: ^0.13.0
 
 dev_dependencies:
-  espresso: ^0.1.0+2
-  pedantic: ^1.10.0
-  integration_test:
-    sdk: flutter
+  espresso: ^0.2.0
   flutter_driver:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
 
 flutter:

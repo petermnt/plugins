@@ -4,7 +4,6 @@
 
 import 'package:in_app_purchase_storekit/src/types/app_store_product_details.dart';
 import 'package:in_app_purchase_storekit/src/types/app_store_purchase_details.dart';
-import 'package:in_app_purchase_storekit/src/store_kit_wrappers/sk_product_wrapper.dart';
 import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
 import 'package:test/test.dart';
 
@@ -17,7 +16,7 @@ void main() {
         () {
       final SKProductSubscriptionPeriodWrapper wrapper =
           SKProductSubscriptionPeriodWrapper.fromJson(
-              buildSubscriptionPeriodMap(dummySubscription)!);
+              buildSubscriptionPeriodMap(dummySubscription));
       expect(wrapper, equals(dummySubscription));
     });
 
@@ -25,7 +24,8 @@ void main() {
         'SKProductSubscriptionPeriodWrapper should have properties to be default values if map is empty',
         () {
       final SKProductSubscriptionPeriodWrapper wrapper =
-          SKProductSubscriptionPeriodWrapper.fromJson(<String, dynamic>{});
+          SKProductSubscriptionPeriodWrapper.fromJson(
+              const <String, dynamic>{});
       expect(wrapper.numberOfUnits, 0);
       expect(wrapper.unit, SKSubscriptionPeriodUnit.day);
     });
@@ -39,10 +39,20 @@ void main() {
     });
 
     test(
+        'SKProductDiscountWrapper missing identifier and type should have '
+        'property values consistent with map', () {
+      final SKProductDiscountWrapper wrapper =
+          SKProductDiscountWrapper.fromJson(
+              buildDiscountMapMissingIdentifierAndType(
+                  dummyDiscountMissingIdentifierAndType));
+      expect(wrapper, equals(dummyDiscountMissingIdentifierAndType));
+    });
+
+    test(
         'SKProductDiscountWrapper should have properties to be default if map is empty',
         () {
       final SKProductDiscountWrapper wrapper =
-          SKProductDiscountWrapper.fromJson(<String, dynamic>{});
+          SKProductDiscountWrapper.fromJson(const <String, dynamic>{});
       expect(wrapper.price, '');
       expect(
           wrapper.priceLocale,
@@ -70,7 +80,7 @@ void main() {
         'SKProductWrapper should have properties to be default if map is empty',
         () {
       final SKProductWrapper wrapper =
-          SKProductWrapper.fromJson(<String, dynamic>{});
+          SKProductWrapper.fromJson(const <String, dynamic>{});
       expect(wrapper.productIdentifier, '');
       expect(wrapper.localizedTitle, '');
       expect(wrapper.localizedDescription, '');
@@ -95,8 +105,7 @@ void main() {
       expect(product.title, wrapper.localizedTitle);
       expect(product.description, wrapper.localizedDescription);
       expect(product.id, wrapper.productIdentifier);
-      expect(product.price,
-          wrapper.priceLocale.currencySymbol + wrapper.price.toString());
+      expect(product.price, wrapper.priceLocale.currencySymbol + wrapper.price);
       expect(product.skProduct, wrapper);
     });
 
@@ -127,25 +136,40 @@ void main() {
 
   group('Payment queue related object tests', () {
     test('Should construct correct SKPaymentWrapper from json', () {
-      SKPaymentWrapper payment =
+      final SKPaymentWrapper payment =
           SKPaymentWrapper.fromJson(dummyPayment.toMap());
       expect(payment, equals(dummyPayment));
     });
 
+    test('SKPaymentWrapper should have propery values consistent with .toMap()',
+        () {
+      final Map<String, dynamic> mapResult = dummyPaymentWithDiscount.toMap();
+      expect(mapResult['productIdentifier'],
+          dummyPaymentWithDiscount.productIdentifier);
+      expect(mapResult['applicationUsername'],
+          dummyPaymentWithDiscount.applicationUsername);
+      expect(mapResult['requestData'], dummyPaymentWithDiscount.requestData);
+      expect(mapResult['quantity'], dummyPaymentWithDiscount.quantity);
+      expect(mapResult['simulatesAskToBuyInSandbox'],
+          dummyPaymentWithDiscount.simulatesAskToBuyInSandbox);
+      expect(mapResult['paymentDiscount'],
+          equals(dummyPaymentWithDiscount.paymentDiscount?.toMap()));
+    });
+
     test('Should construct correct SKError from json', () {
-      SKError error = SKError.fromJson(buildErrorMap(dummyError));
+      final SKError error = SKError.fromJson(buildErrorMap(dummyError));
       expect(error, equals(dummyError));
     });
 
     test('Should construct correct SKTransactionWrapper from json', () {
-      SKPaymentTransactionWrapper transaction =
+      final SKPaymentTransactionWrapper transaction =
           SKPaymentTransactionWrapper.fromJson(
               buildTransactionMap(dummyTransaction));
       expect(transaction, equals(dummyTransaction));
     });
 
     test('toPurchaseDetails() should return correct PurchaseDetail object', () {
-      AppStorePurchaseDetails details =
+      final AppStorePurchaseDetails details =
           AppStorePurchaseDetails.fromSKTransaction(
               dummyTransaction, 'receipt data');
       expect(dummyTransaction.transactionIdentifier, details.purchaseID);
@@ -183,7 +207,7 @@ void main() {
     });
 
     test('Should generate correct map of the payment object', () {
-      Map map = dummyPayment.toMap();
+      final Map<String, Object?> map = dummyPayment.toMap();
       expect(map['productIdentifier'], dummyPayment.productIdentifier);
       expect(map['applicationUsername'], dummyPayment.applicationUsername);
 
