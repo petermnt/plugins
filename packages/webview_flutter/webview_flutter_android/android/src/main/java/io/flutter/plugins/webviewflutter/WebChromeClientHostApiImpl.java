@@ -52,7 +52,6 @@ import androidx.core.app.ActivityCompat;
  * <p>Handles creating {@link WebChromeClient}s that intercommunicate with a paired Dart object.
  */
 public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
-  private static final String TAG = "WebChromeClientHostApiI";  // TODO?
   private final InstanceManager instanceManager;
   private final WebChromeClientCreator webChromeClientCreator;
   private final WebChromeClientFlutterApiImpl flutterApi;
@@ -150,7 +149,6 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
 
     //For Android  >= 4.1
     public void openFileChooser(ValueCallback<Uri> valueCallback, String acceptType, String capture) {
-      Log.v(TAG, "openFileChooser Android  >= 4.1");
       uploadMessage = valueCallback;
       takePhotoOrOpenGallery();
     }
@@ -158,7 +156,6 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
     // For Android >= 5.0
     @Override
     public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
-      Log.v(TAG, "openFileChooser Android >= 5.0");
       uploadMessageAboveL = filePathCallback;
       takePhotoOrOpenGallery();
       return true;
@@ -224,9 +221,7 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
   }
 
   private static void openImageChooserActivity() {
-    Log.v(TAG, "openImageChooserActivity");
     if (WebViewFlutterPlugin.activity == null) {
-      Log.v(TAG, "activity is null");
       return;
     }
     Intent intent1 = new Intent(Intent.ACTION_GET_CONTENT);
@@ -337,7 +332,7 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
                                        @Size(min = 1) @NonNull String... perms) {
     // Always return true for SDK < M, let the system deal with the permissions
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-      Log.w(TAG, "hasPermissions: API version < M, returning true by default");
+      Log.w("w", "hasPermissions: API version < M, returning true by default");
 
       // DANGER ZONE!!! Changing this will break the library.
       return true;
@@ -379,7 +374,6 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
   }
 
   public boolean activityResult(int requestCode, int resultCode, Intent data) {
-    Log.v(TAG, "activityResult: " );
     if (null == uploadMessage && null == uploadMessageAboveL) {
       return false;
     }
