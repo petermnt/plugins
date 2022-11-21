@@ -118,12 +118,12 @@ public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
             new WebViewClientHostApiImpl.WebViewClientCreator(),
             new WebViewClientFlutterApiImpl(binaryMessenger, instanceManager)));
 
-    WebChromeClientHostApi.setup(
-        binaryMessenger,
-        new WebChromeClientHostApiImpl(
+    webChromeClientHostApi = new WebChromeClientHostApiImpl(
             instanceManager,
             new WebChromeClientHostApiImpl.WebChromeClientCreator(),
-            new WebChromeClientFlutterApiImpl(binaryMessenger, instanceManager)));
+            new WebChromeClientFlutterApiImpl(binaryMessenger, instanceManager));
+    WebChromeClientHostApi.setup(binaryMessenger, webChromeClientHostApi);
+
     DownloadListenerHostApi.setup(
         binaryMessenger,
         new DownloadListenerHostApiImpl(
@@ -177,7 +177,7 @@ public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
     activityPluginBinding.addActivityResultListener(new PluginRegistry.ActivityResultListener() {
       @Override
       public boolean onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (webChromeClientHostApi != null){
+        if (webChromeClientHostApi != null) {
           return webChromeClientHostApi.activityResult(requestCode, resultCode, data);
         }
         return false;
