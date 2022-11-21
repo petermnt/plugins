@@ -32,7 +32,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
-import util.FileUtil;
+import io.flutter.plugins.webviewflutter.util.FileUtil;
 import android.widget.Toast;
 import android.content.ClipData;
 import android.webkit.ValueCallback;

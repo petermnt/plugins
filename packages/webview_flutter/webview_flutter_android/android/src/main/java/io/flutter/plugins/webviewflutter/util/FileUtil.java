@@ -1,4 +1,4 @@
-package util;
+package io.flutter.plugins.webviewflutter.util;
 
 import android.content.Context;
 import android.content.Intent;
