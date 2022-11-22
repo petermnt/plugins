@@ -145,17 +145,21 @@ public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
   @Override
   public void onAttachedToActivity(@NonNull ActivityPluginBinding activityPluginBinding) {
     updateContext(activityPluginBinding.getActivity());
+    FilePickerHelper.getInstance().setActivity(activityPluginBinding.getActivity());
+    activityPluginBinding.addActivityResultListener((requestCode, resultCode, data) -> FilePickerHelper.getInstance().activityResult(requestCode, resultCode, data));
   }
 
   @Override
   public void onDetachedFromActivityForConfigChanges() {
     updateContext(pluginBinding.getApplicationContext());
+    FilePickerHelper.getInstance().setActivity(null);
   }
 
   @Override
   public void onReattachedToActivityForConfigChanges(
       @NonNull ActivityPluginBinding activityPluginBinding) {
     updateContext(activityPluginBinding.getActivity());
+    FilePickerHelper.getInstance().setActivity(activityPluginBinding.getActivity());
   }
 
   @Override
