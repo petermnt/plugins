@@ -4,26 +4,19 @@
 
 package io.flutter.plugins.webviewflutter;
 
+import android.net.Uri;
 import android.os.Build;
 import android.os.Message;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.ValueCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebChromeClientHostApi;
-
-import android.net.Uri;
-import android.annotation.TargetApi;
-import android.app.Activity;
-import android.content.ClipData;
-import android.content.Intent;
-import android.webkit.ValueCallback;
-
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Host api implementation for {@link WebChromeClient}.
@@ -34,11 +27,6 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
   private final InstanceManager instanceManager;
   private final WebChromeClientCreator webChromeClientCreator;
   private final WebChromeClientFlutterApiImpl flutterApi;
-
-  private static ValueCallback<Uri> uploadMessage;
-  private static ValueCallback<Uri[]> uploadMessageAboveL;
-  private final static int FILE_CHOOSER_RESULT_CODE = 10000;
-  public static final int RESULT_OK = -1;
 
   /**
    * Implementation of {@link WebChromeClient} that passes arguments of callback methods to Dart.
@@ -124,18 +112,7 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
     // For Android >= 5.0
     @Override
     public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
-      uploadMessageAboveL = filePathCallback;
-      if (WebViewFlutterPlugin.activity == null) {
-        return false;
-      }
-      Intent getContentIntent = new Intent(Intent.ACTION_GET_CONTENT);
-      getContentIntent.addCategory(Intent.CATEGORY_OPENABLE);
-      getContentIntent.setType("*/*");
-      Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
-      chooserIntent.putExtra(Intent.EXTRA_TITLE, WebViewFlutterPlugin.activity.getString(R.string.select_file));
-      chooserIntent.putExtra(Intent.EXTRA_INTENT, getContentIntent);
-      WebViewFlutterPlugin.activity.startActivityForResult(chooserIntent, FILE_CHOOSER_RESULT_CODE);
-      return true;
+        return FilePickerHelper.getInstance().onShowFileChooser(filePathCallback, fileChooserParams);
     }
 
     /**
@@ -189,56 +166,12 @@ public class WebChromeClientHostApiImpl implements WebChromeClientHostApi {
   }
 
   @Override
-  public void create(@NotNull Long instanceId, @NotNull Long webViewClientInstanceId) {
+  public void create(Long instanceId, Long webViewClientInstanceId) {
     final WebViewClient webViewClient =
             instanceManager.getInstance(webViewClientInstanceId);
     final WebChromeClient webChromeClient =
         webChromeClientCreator.createWebChromeClient(flutterApi, webViewClient);
     instanceManager.addDartCreatedInstance(webChromeClient, instanceId);
-  }
-
-  public boolean activityResult(int requestCode, int resultCode, Intent data) {
-    if (null == uploadMessage && null == uploadMessageAboveL) {
-      return false;
-    }
-    Uri result = null;
-    if (requestCode == FILE_CHOOSER_RESULT_CODE) {
-      result = data == null || resultCode != RESULT_OK ? null : data.getData();
-    }
-    if (uploadMessageAboveL != null) {
-      onActivityResultAboveL(requestCode, resultCode, data);
-    }
-    else if (uploadMessage != null && result != null) {
-      uploadMessage.onReceiveValue(result);
-      uploadMessage = null;
-    }
-    return false;
-  }
-
-  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-  private void onActivityResultAboveL(int requestCode, int resultCode, Intent intent) {
-    if (requestCode != FILE_CHOOSER_RESULT_CODE || uploadMessageAboveL == null) {
-      return;
-    }
-    Uri[] results = null;
-    if (resultCode == Activity.RESULT_OK) {
-      if (intent != null) {
-        String dataString = intent.getDataString();
-        ClipData clipData = intent.getClipData();
-        if (clipData != null) {
-          results = new Uri[clipData.getItemCount()];
-          for (int i = 0; i < clipData.getItemCount(); i++) {
-            ClipData.Item item = clipData.getItemAt(i);
-            results[i] = item.getUri();
-          }
-        }
-        if (dataString != null) {
-          results = new Uri[]{Uri.parse(dataString)};
-        }
-      }
-    }
-    uploadMessageAboveL.onReceiveValue(results);
-    uploadMessageAboveL = null;
   }
 
 }
